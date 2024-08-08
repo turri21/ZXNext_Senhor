@@ -1,3 +1,7 @@
+-=(ZXNext_Senhor notes)=-
+
+Tested: Working Video 720p, 1080p & Sound
+
 # [ZX Spectrum Next](https://www.specnext.com/) for [MiSTer Platform](https://github.com/MiSTer-devel/Main_MiSTer/wiki)
 
 Port of original [ZX Spectrum Next core](https://gitlab.com/SpectrumNext/ZX_Spectrum_Next_FPGA) developed by Alvin Albrecht, Victor Trucco and Fabio Belavenuto.
