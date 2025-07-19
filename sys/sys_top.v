@@ -41,7 +41,7 @@ module sys_top
 	output        HDMI_TX_HS,
 	output        HDMI_TX_VS,
 	
-//	input         HDMI_TX_INT,
+	input         HDMI_TX_INT,
 
 	//////////// SDR ///////////
 	output [12:0] SDRAM_A,
@@ -56,25 +56,25 @@ module sys_top
 	output        SDRAM_CLK,
 //	output        SDRAM_CKE,
 
-`ifdef MISTER_DUAL_SDRAM
+`ifdef DUAL_SDRAM
 	////////// SDR #2 //////////
-	output [12:0] SDRAM2_A,
-	inout  [15:0] SDRAM2_DQ,
-	output        SDRAM2_nWE,
-	output        SDRAM2_nCAS,
-	output        SDRAM2_nRAS,
-	output        SDRAM2_nCS,
-	output  [1:0] SDRAM2_BA,
-	output        SDRAM2_CLK,
+//	output [12:0] SDRAM2_A,
+//	inout  [15:0] SDRAM2_DQ,
+//	output        SDRAM2_nWE,
+//	output        SDRAM2_nCAS,
+//	output        SDRAM2_nRAS,
+//	output        SDRAM2_nCS,
+//	output  [1:0] SDRAM2_BA,
+//	output        SDRAM2_CLK,
 
 `else
 	//////////// VGA ///////////
 //	output  [5:0] VGA_R,
 //	output  [5:0] VGA_G,
 //	output  [5:0] VGA_B,
-//	inout         VGA_HS,
+//	inout         VGA_HS,  // VGA_HS is secondary SD card detect when VGA_EN = 1 (inactive)
 //	output		  VGA_VS,
-	input         VGA_EN,  // active low
+//	input         VGA_EN,  // active low
 
 	/////////// AUDIO //////////
 //	output		  AUDIO_L,
@@ -124,31 +124,27 @@ module sys_top
 //	inout   [6:0] USER_IO
 );
 
-//////////////////////// Senhor: Initializations ////////////////////////
+///////////////////////// Senhor: Initializations ////////////////////////
 
 wire [5:0] VGA_R;
 wire [5:0] VGA_G;
 wire [5:0] VGA_B;
-//wire VGA_HS;
-//wire VGA_VS = 1'b1;
-//wire VGA_EN = 1'b1;
-//
-assign VGA_R = 6'b000000;
-assign VGA_G = 6'b000000;
-assign VGA_B = 6'b000000;
-//
-//wire [3:0] SDIO_DAT;
-//wire SDIO_CMD = 1'b1;
-//wire [6:0] USER_IO;
-//wire SD_SPI_MISO = 1'b1;
+wire VGA_HS;
+wire VGA_VS;
+wire VGA_EN = 1'b1;
 
-//wire BTN_RESET = 1'b1, BTN_OSD = 1'b1, BTN_USER = 1'b1;
+wire [3:0] SDIO_DAT;
+wire SDIO_CMD = 1'b1;
+//wire [6:0] USER_IO;
+wire SD_SPI_MISO = 1'b1;
+
+wire BTN_RESET = 1'b1, BTN_OSD = 1'b1, BTN_USER = 1'b1;
 
 /////////////////////////////////////////////////////////////////////////
 
 //////////////////////  Secondary SD  ///////////////////////////////////
-//wire SD_CS, SD_CLK, SD_MOSI, SD_MISO, SD_CD;
-//
+wire SD_CS, SD_CLK, SD_MOSI, SD_MISO, SD_CD;
+
 //`ifndef MISTER_DUAL_SDRAM
 //	wire   sd_cd       = SDCD_SPDIF & ~SW[2]; // SW[2]=ON workaround for faulty boards without SD card detect pin.
 //	assign SD_CD       = mcp_en ? mcp_sdcd : sd_cd;
@@ -219,15 +215,15 @@ always @(posedge FPGA_CLK2_50) begin
 	reg btn_up = 0;
 	reg btn_en = 0;
 
-//	btn_up <= BTN_RESET & BTN_OSD & BTN_USER;
+	btn_up <= BTN_RESET & BTN_OSD & BTN_USER;
 	if(~reset & btn_up & ~&btn_timeout) btn_timeout <= btn_timeout + 1'd1;
 	btn_en <= ~BTN_DIS;
 	BTN_EN <= &btn_timeout & btn_en;
 end
 
-wire btn_r = (mcp_en | SW[3]) ? mcp_btn[1] : (BTN_EN & ~1'b1);
-wire btn_o = (mcp_en | SW[3]) ? mcp_btn[2] : (BTN_EN & ~1'b1  );
-wire btn_u = (mcp_en | SW[3]) ? mcp_btn[0] : (BTN_EN & ~1'b1 );
+wire btn_r = (mcp_en | SW[3]) ? mcp_btn[1] : (BTN_EN & ~BTN_RESET);
+wire btn_o = (mcp_en | SW[3]) ? mcp_btn[2] : (BTN_EN & ~BTN_OSD  );
+wire btn_u = (mcp_en | SW[3]) ? mcp_btn[0] : (BTN_EN & ~BTN_USER );
 
 reg btn_user, btn_osd;
 always @(posedge FPGA_CLK2_50) begin
@@ -1274,8 +1270,8 @@ altddio_out
 )
 hdmiclk_ddr
 (
-	.datain_h(1'b0),
-	.datain_l(1'b1),
+	.datain_h(1'b1),
+	.datain_l(1'b0),
 	.outclock(hdmi_tx_clk),
 	.dataout(HDMI_TX_CLK),
 	.aclr(1'b0),
@@ -1544,7 +1540,7 @@ assign SDCD_SPDIF = (mcp_en & ~spdif) ? 1'b0 : 1'bZ;
 	assign AUDIO_L     = av_dis ? 1'bZ : (SW[0] | mcp_en) ? HDMI_SCLK  : analog_l;
 `endif
 
-//assign HDMI_MCLK = clk_audio;
+assign HDMI_MCLK = clk_audio;
 wire clk_audio;
 
 pll_audio pll_audio
